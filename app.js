@@ -6,19 +6,37 @@ const userRoutes = require('./Routes/routing.js');
 
 // Connect to MongoDB
 mongoose.connect(`mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@users.hunzc.mongodb.net/?retryWrites=true&w=majority&appName=Users`);
+
 const db = mongoose.connection;
+
+// Notify about connection if successful.
 db.once('open', () => {
     console.log('Connected to Database.');
 });
 
-app.get('/', (req, res) => {
-    res.send('Hello World!');
+// Notify about connection if unsuccessful.
+db.on('error', (error) => {
+    console.log('Connection to the database unsuccessful.', error);
 });
 
+// Parsing JSON data for PATCH and POST requests.
 app.use(express.json());
 
-app.use( '/api', userRoutes);
+app.use( '/api', checkAPIKey, userRoutes);
 
-app.listen(3000, () => {
-    console.log('Server is running on port 3000');
+// If route is different from /api send message.
+app.get('/*', (req, res) => {
+    res.send('Specified route does not exist.');
 });
+
+app.listen(process.env.API_PORT, () => {
+    console.log(`Server is running on port ${process.env.API_PORT}`);
+});
+
+// Comparing the API_KEY from request to the API_KEY in environment variables.
+function checkAPIKey(req, res, next) {
+    if(req.query.API_KEY !== process.env.API_KEY) {
+        return res.status(401).send('Unauthorized');
+    }
+    next();
+}
