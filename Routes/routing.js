@@ -1,11 +1,11 @@
 const express = require('express');
-const url = require('url');
 const router = express.Router();
 const User = require('../Models/user_model.js');
 
 // Get all users.
 router.get('/users', async (req, res) => {
     try {
+        // Check if role is specified in the request.
         if(req.query.role) {
             // Check if role is correct.
             if(req.query.role !== 'admin' && req.query.role !== 'user') {
