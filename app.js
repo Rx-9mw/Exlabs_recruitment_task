@@ -2,6 +2,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const express = require('express');
 const app = express();
+const userRoutes = require('./Routes/routing.js');
 
 // Connect to MongoDB
 mongoose.connect(`mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@users.hunzc.mongodb.net/?retryWrites=true&w=majority&appName=Users`);
@@ -15,6 +16,8 @@ app.get('/', (req, res) => {
 });
 
 app.use(express.json());
+
+app.use( '/api', userRoutes);
 
 app.listen(3000, () => {
     console.log('Server is running on port 3000');
