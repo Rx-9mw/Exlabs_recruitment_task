@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../Models/user_model.js');
-const {duplicateUserCheck, y} = require('../Middleware/middleware.js');
+const { duplicateUserCheck, checkAPIKey } = require('../Middleware/middleware.js');
 
 // Get all users.
 router.get('/users', async (req, res) => {

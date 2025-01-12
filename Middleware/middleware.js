@@ -22,6 +22,7 @@ function checkAPIKey(req, res, next) {
     if(req.query.API_KEY !== process.env.API_KEY) {
         return res.status(401).send('Unauthorized');
     }
+    
     next();
 }
 
