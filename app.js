@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const express = require('express');
 const app = express();
 const userRoutes = require('./Routes/routing.js');
+const { duplicateUserCheck, checkAPIKey }  = require('./Middleware/middleware.js');
 
 // Connect to MongoDB
 mongoose.connect(`mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@users.hunzc.mongodb.net/?retryWrites=true&w=majority&appName=Users`);
@@ -32,11 +33,3 @@ app.get('/*', (req, res) => {
 app.listen(process.env.API_PORT, () => {
     console.log(`Server is running on port ${process.env.API_PORT}`);
 });
-
-// Comparing the API_KEY from request to the API_KEY in environment variables.
-function checkAPIKey(req, res, next) {
-    if(req.query.API_KEY !== process.env.API_KEY) {
-        return res.status(401).send('Unauthorized');
-    }
-    next();
-}
