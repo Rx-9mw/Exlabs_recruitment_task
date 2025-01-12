@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../Models/user_model.js');
+const {duplicateUserCheck, y} = require('../Middleware/middleware.js');
 
 // Get all users.
 router.get('/users', async (req, res) => {
@@ -33,12 +34,12 @@ router.get('/user/:id', async (req, res) => {
         res.status(200).send(user);
     } catch (error) {
         // If user with the id has not been found, send status code 404 and error message.
-        res.status(404).send(`Status code: 404\n User with this id does not exist.\n Details:${error}`);
+        res.status(404).send(`Status code: 404\n User with this id does not exist.`);
     }
 });
 
 // Add user to database.
-router.post('/user', async (req, res) => {
+router.post('/user', duplicateUserCheck, async (req, res) => {
     // Check if request body has at least one paremeter of user to change.
     if(!req.body.id || !req.body.email || !req.body.role) {
         return res.status(400).send(`Status code: 400\n Please include required fields (id, email, role).`);
@@ -61,7 +62,7 @@ router.post('/user', async (req, res) => {
         await user.save();
         res.status(201).send(`Status code: 201\n User created successfully.`);
     } catch (error) {
-        res.status(409).send(`Status code: 409\n Error creating user. Duplicate email.`);
+        res.status(409).send(`Status code: 409\n Error creating user.`);
     }
 });
 
