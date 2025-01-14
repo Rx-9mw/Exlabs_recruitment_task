@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../Models/user_model.js');
-const { duplicateUserCheck, checkAPIKey } = require('../Middleware/middleware.js');
+const { duplicateIdCheck, duplicateEmailCheck, checkAPIKey } = require('../Middleware/middleware.js');
 
 // Get all users.
 router.get('/users', async (req, res) => {
@@ -12,15 +12,16 @@ router.get('/users', async (req, res) => {
             if(req.query.role !== 'admin' && req.query.role !== 'user') {
                 return res.status(400).send('Users not found, role must be either admin or user.');
             }
-            // If role parameter exists find all users with the role and exclude the mongoDB's _id field.
-            const users = await User.find({ role: req.query.role }, { _id: 0, __v: 0 });
+            // If role parameter exists find all users with the role and exclude the mongoDB's __v field.
+            const users = await User.find({ role: req.query.role }, { __v: 0 });
             res.status(200).send(users);
         } else {
-            // Find all users and exclude the mongoDB's _id field.
-            const users = await User.find({}, { _id: 0 });
+            // Find all users and exclude the mongoDB's __v field.
+            const users = await User.find({}, { __v: 0 });
             res.status(200).send(users);
         }
     } catch (error) {
+        console.error(error);
         // If there is an error, send status code 500 and error message
         res.status(500).send('Status code: 500\n Error retrieving users.');
     }
@@ -28,21 +29,43 @@ router.get('/users', async (req, res) => {
 
 // Get user by id.
 router.get('/user/:id', async (req, res) => {
+
+
+    // Not working correctly, have to change it  V
+
+    
+
     try {
-        // Find user and exclude the mongoDB's _id field.
-        const user = await User.find({id: req.params.id}, { _id: 0, __v: 0 });
-        res.status(200).send(user);
+        // Find user and exclude the mongoDB's __v field.
+        const user = await User.findOne({_id: req.params.id}, { __v: 0 });
+
+        if(user){
+            return res.status(200).send(user);
+        }
+
+        res.status(404).send(`Status code: 404\n User with this id does not exist.`);
     } catch (error) {
+        console.error(error);
         // If user with the id has not been found, send status code 404 and error message.
         res.status(404).send(`Status code: 404\n User with this id does not exist.`);
     }
 });
 
 // Add user to database.
-router.post('/user', duplicateUserCheck, async (req, res) => {
+router.post('/user', async (req, res) => {
     // Check if request body has at least one paremeter of user to change.
-    if(!req.body.id || !req.body.email || !req.body.role) {
-        return res.status(400).send(`Status code: 400\n Please include required fields (id, email, role).`);
+    if(!req.body.email || !req.body.role) {
+        return res.status(400).send(`Status code: 400\n Please include required fields (email, role).`);
+    }
+    // Check if the user role is admin or user.
+    if(req.body.role !== 'user') {
+        if(req.body.role !== 'admin') {
+            return res.status(400).send('Status code: 400\n The role of the user can only be admin or user.')
+        }
+    }
+    // Check if user with this email is already in the database.
+    if(await duplicateEmailCheck(req.body.email)) {
+        return res.status(409).send(`Status code: 409\n User with this email already exists.`);
     }
     try {
         /* MongoDB saves empty values as a string with 0 inside it. Because I wanted it to be completely
@@ -52,7 +75,6 @@ router.post('/user', duplicateUserCheck, async (req, res) => {
         req.body.lastName = req.body.lastName || "";
         // Creating new user for MongoDB using the model.
         const user = new User({
-            id: req.body.id,
             firstName: req.body.firstName,
             lastName: req.body.lastName,
             email: req.body.email,
@@ -62,18 +84,71 @@ router.post('/user', duplicateUserCheck, async (req, res) => {
         await user.save();
         res.status(201).send(`Status code: 201\n User created successfully.`);
     } catch (error) {
+        console.error(error);
         res.status(409).send(`Status code: 409\n Error creating user.`);
     }
 });
 
-// Delete user.
-router.delete('/user/:id', async (req, res) => {
-   
-});
-
 // Update user.
 router.patch('/user/:id', async (req, res) => {
-    
+
+    const dataToUpdate = {};
+    // Check if role exists and is either user or admin.
+    if(req.body.role){
+        if(req.body.role !== 'user') {
+            if(req.body.role !== 'admin') {
+                return res.status(400).send('Status code: 400\n The role of the user can only be admin or user.')
+            }
+        }
+    }
+    // Check if user with the id exists.
+    if(!(await duplicateIdCheck(req.params.id))) {
+        return res.status(404).send('Status Code: 404\n User with this id does not exist.')
+    } 
+    // Check if one of the values is provided.
+    if(!req.body.firstName && !req.body.lastName && !req.body.role){
+        return res.status(400).send('Please provide at least one of the requested properties (first name, last name, role).');
+    }
+    // Loop through the request body and pull out only the needed values.
+    for(const [key, value] of Object.entries(req.body)){
+        if((key === 'firstName' || key === 'lastName' || key === 'role') && value){
+            dataToUpdate[key] = value;
+        }
+    }
+
+    try {
+        // Update user using request.
+        await User.updateOne(
+            { _id: req.params.id },
+            {
+                $set: dataToUpdate,
+            }
+        )
+
+        res.status(200).send(`Status code: 200\n User updated.`);
+    } catch(error) {
+        console.error(error);
+        res.status(500).send('Status code: 500\n Error updating user.');
+    }
+
 });
+
+// Delete user.
+router.delete('/user/:id', async (req, res) => {
+        // Check if user with the id exists.
+        if(!(await duplicateIdCheck(req.params.id))) {
+            return res.status(404).send('Status Code: 404\n User with this id does not exist.')
+        } 
+
+        try {
+            // Delete user with the id.
+            await User.deleteOne({ _id: req.params.id });
+            res.status(200).send('Status code: 200\n User deleted successfully.');
+        } catch (error) {
+            console.error(error);
+            res.status(500).send('Status code: 500\n Error deleting user.');
+        }
+});
+
 
 module.exports = router;

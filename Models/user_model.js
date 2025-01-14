@@ -2,11 +2,6 @@ const mongoose = require('mongoose');
 
 // Schema describing the structure of user for MongoDB.
 const userSchema = new mongoose.Schema({
-    id:{
-        type: Number,
-        required: true,
-        unique: true
-    },
     firstName:{
         type: String,
         required: false
