@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const express = require('express');
 const app = express();
 const userRoutes = require('./Routes/routing.js');
-const { duplicateUserCheck, checkAPIKey }  = require('./Middleware/middleware.js');
+const { duplicateIdCheck, duplicateEmailCheck, checkAPIKey }  = require('./Middleware/middleware.js');
 
 // Connect to MongoDB
 mongoose.connect(`mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@users.hunzc.mongodb.net/?retryWrites=true&w=majority&appName=Users`);
