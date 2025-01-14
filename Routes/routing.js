@@ -29,25 +29,19 @@ router.get('/users', async (req, res) => {
 
 // Get user by id.
 router.get('/user/:id', async (req, res) => {
-
-
-    // Not working correctly, have to change it  V
-
-    
+    // Check if user is in database.
+    if(!(await duplicateIdCheck(req.params.id))){
+        return res.status(404).send('NEW Status code 404\n User with this id does not exist.');
+    }
 
     try {
-        // Find user and exclude the mongoDB's __v field.
+        // Find user, exclude the mongoDB's __v field and send response.
         const user = await User.findOne({_id: req.params.id}, { __v: 0 });
-
-        if(user){
-            return res.status(200).send(user);
-        }
-
-        res.status(404).send(`Status code: 404\n User with this id does not exist.`);
+        res.status(201).send(user);
     } catch (error) {
         console.error(error);
         // If user with the id has not been found, send status code 404 and error message.
-        res.status(404).send(`Status code: 404\n User with this id does not exist.`);
+        res.status(500).send(`Status code: 500\n Error retrieving user.`);
     }
 });
 
@@ -67,6 +61,7 @@ router.post('/user', async (req, res) => {
     if(await duplicateEmailCheck(req.body.email)) {
         return res.status(409).send(`Status code: 409\n User with this email already exists.`);
     }
+
     try {
         /* MongoDB saves empty values as a string with 0 inside it. Because I wanted it to be completely
         empty, I'm overwriting the value with an empty string if first name or last name has not been
@@ -85,7 +80,7 @@ router.post('/user', async (req, res) => {
         res.status(201).send(`Status code: 201\n User created successfully.`);
     } catch (error) {
         console.error(error);
-        res.status(409).send(`Status code: 409\n Error creating user.`);
+        res.status(500).send(`Status code: 500\n Error creating user.`);
     }
 });
 
@@ -117,7 +112,7 @@ router.patch('/user/:id', async (req, res) => {
     }
 
     try {
-        // Update user using request.
+        // Update user using data pulled from the request.
         await User.updateOne(
             { _id: req.params.id },
             {
