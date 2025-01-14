@@ -6,7 +6,7 @@ const userRoutes = require('./Routes/routing.js');
 const { duplicateIdCheck, duplicateEmailCheck, checkAPIKey }  = require('./Middleware/middleware.js');
 
 // Connect to MongoDB
-mongoose.connect(`mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@users.hunzc.mongodb.net/?retryWrites=true&w=majority&appName=Users`);
+mongoose.connect(process.env.DB_URL);
 
 const db = mongoose.connection;
 
