@@ -10,7 +10,7 @@ router.get('/users', async (req, res) => {
         if(req.query.role) {
             // Check if role is correct.
             if(req.query.role !== 'admin' && req.query.role !== 'user') {
-                return res.status(400).send('Users not found, role must be either admin or user.');
+                return res.status(400).send('Status code: 400\n Users not found, role must be either admin or user.');
             }
             // If role parameter exists find all users with the role and exclude the mongoDB's __v field.
             const users = await User.find({ role: req.query.role }, { __v: 0 });
@@ -31,7 +31,7 @@ router.get('/users', async (req, res) => {
 router.get('/user/:id', async (req, res) => {
     // Check if user is in database.
     if(!(await duplicateIdCheck(req.params.id))){
-        return res.status(404).send('NEW Status code 404\n User with this id does not exist.');
+        return res.status(404).send('Status code 404\n User with this id does not exist.');
     }
 
     try {
@@ -47,6 +47,10 @@ router.get('/user/:id', async (req, res) => {
 
 // Add user to database.
 router.post('/user', async (req, res) => {
+    // Check if email is not empty.
+    if(req.body.email === '') {
+        return res.status(400).send(`Status code: 400\n Fields email and role should not be empty.`);
+    }
     // Check if request body has at least one paremeter of user to change.
     if(!req.body.email || !req.body.role) {
         return res.status(400).send(`Status code: 400\n Please include required fields (email, role).`);
@@ -102,7 +106,7 @@ router.patch('/user/:id', async (req, res) => {
     } 
     // Check if one of the values is provided.
     if(!req.body.firstName && !req.body.lastName && !req.body.role){
-        return res.status(400).send('Please provide at least one of the requested properties (first name, last name, role).');
+        return res.status(400).send('Status Code: 400\n Please provide at least one of the requested properties (first name, last name, role).');
     }
     // Loop through the request body and pull out only the needed values.
     for(const [key, value] of Object.entries(req.body)){
